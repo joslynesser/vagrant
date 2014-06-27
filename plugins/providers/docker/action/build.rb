@@ -38,7 +38,9 @@ module VagrantPlugins
             image = machine.provider.driver.build(
               build_dir,
               extra_args: machine.provider_config.build_args,
-            )
+            ) do |line|
+              machine.ui.output(line)
+            end
             machine.ui.detail("Image: #{image}")
 
             # Store the image ID

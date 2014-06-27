@@ -17,7 +17,32 @@ module VagrantPlugins
       def build(dir, **opts)
         args   = Array(opts[:extra_args])
         args   << dir
-        result = execute('docker', 'build', *args)
+
+        data_acc = ""
+        result = execute('docker', 'build', *args) do |type, data|
+          # Accumulate the data so we only output lines at a time
+          data_acc << data
+
+          # If we have a newline, then output all the lines we have so far
+          if data_acc.include?("\n")
+            lines = data_acc.split("\n")
+
+            if !data_acc.end_with?("\n")
+              data_acc = lines.pop.chomp
+            else
+              data_acc = ""
+            end
+
+            lines.each do |line|
+              line = " " if line == ""
+              yield line
+            end
+          end
+        end
+
+        # Output any remaining data
+        yield data_acc if !data_acc.empty?
+
         regexp = /Successfully built (.+)$/i
         match  = regexp.match(result)
         if !match
